@@ -1,7 +1,5 @@
 <?php
-
 namespace Adldap\Laravel\Middleware;
-
 use Closure;
 use Adldap\Models\User;
 use Adldap\Laravel\Traits\ImportsUsers;
@@ -9,18 +7,17 @@ use Illuminate\Http\Request;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class WindowsAuthenticate
 {
     use ImportsUsers;
-
     /**
      * The authenticator implementation.
      *
      * @var \Illuminate\Contracts\Auth\Guard
      */
     protected $auth;
-
     /**
      * Create a new filter instance.
      *
@@ -30,7 +27,6 @@ class WindowsAuthenticate
     {
         $this->auth = $auth;
     }
-
     /**
      * Handle an incoming request.
      *
@@ -44,49 +40,39 @@ class WindowsAuthenticate
         if (!$this->auth->check()) {
             // Retrieve the SSO login attribute.
             $auth = $this->getWindowsAuthAttribute();
-
             // Retrieve the SSO input key.
             $key = key($auth);
-
             // Handle Windows Authentication.
             if ($account = $request->server($auth[$key])) {
                 // Username's may be prefixed with their domain,
                 // we just need their account name.
                 $username = explode('\\', $account);
-
                 if (count($username) === 2) {
                     list($domain, $username) = $username;
                 } else {
                     $username = $username[key($username)];
                 }
-
                 // Find the user in AD.
                 $user = $this->newAdldapUserQuery()
                     ->whereEquals($key, $username)
                     ->first();
-
                 // Double check that we have the correct AD user instance.
                 if ($user instanceof User) {
                     // Retrieve the Eloquent user model from our AD user instance.
                     // We'll assign the user a random password since we don't
                     // have access to it through SSO auth.
-                    $model = $this->getModelFromAdldap($user, str_random());
-
+                    $model = $this->getModelFromAdldap($user, Str::random(Config::get('adldap_auth.hashed_password_length', 16)));
                     // Save model in case of changes.
                     $this->saveModel($model);
-
                     // Manually log the user in.
                     $this->auth->login($model);
-
                     // Perform any further operations on the authenticated user model.
                     $this->handleAuthenticatedUser($model);
                 }
             }
         }
-
         return $this->returnNextRequest($request, $next);
     }
-
     /**
      * Returns the next request.
      *
@@ -101,7 +87,6 @@ class WindowsAuthenticate
     {
         return $next($request);
     }
-
     /**
      * Returns a new auth model instance.
      *
@@ -110,10 +95,8 @@ class WindowsAuthenticate
     public function createModel()
     {
         $model = $this->auth->getProvider()->getModel();
-
         return new $model();
     }
-
     /**
      * Handle the authenticated user model.
      *
@@ -127,7 +110,6 @@ class WindowsAuthenticate
     {
         //
     }
-
     /**
      * Returns the windows authentication attribute.
      *
