@@ -7,6 +7,7 @@ use Adldap\Laravel\Facades\Adldap;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 trait ImportsUsers
 {
@@ -49,7 +50,7 @@ trait ImportsUsers
 
         // Sync the users password (if enabled). If no password is
         // given, we'll assign a random 16 character string.
-        $model = $this->syncModelPassword($model, $password ?: str_random());
+        $model = $this->syncModelPassword($model, $password ?: Str::random(Config::get('adldap_auth.hashed_password_length', 16)));
 
         // Synchronize other active directory attributes on the model.
         $model = $this->syncModelFromAdldap($user, $model);
@@ -111,7 +112,7 @@ trait ImportsUsers
     {
         // If the developer doesn't want to synchronize AD passwords,
         // we'll set the password to a random 16 character string.
-        $password = ($this->getPasswordSync() ? $password : str_random());
+        $password = ($this->getPasswordSync() ? $password : Str::random(Config::get('adldap_auth.hashed_password_length', 16)));
 
         // If the model has a set mutator for the password then
         // we'll assume that the dev is using their own
