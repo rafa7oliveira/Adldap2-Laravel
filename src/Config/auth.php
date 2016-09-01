@@ -109,6 +109,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Hashed Password Legth
+    |--------------------------------------------------------------------------
+    |
+    | If password sync option is disabled, the local user account is applied
+    | a random 16 character hashed password by default.This option 
+    | control the legth of the hashed password.
+    |
+    | This option must be a integer.
+    |
+    */
+
+    'hashed_password_length' => env('ADLDAP_HASHED_PASSWORD_LENGTH', 16),
+
+    /*
+    |--------------------------------------------------------------------------
     | Login Attribute
     |--------------------------------------------------------------------------
     |
